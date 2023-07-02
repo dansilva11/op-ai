@@ -14,37 +14,29 @@ class InputData(BaseModel):
 app = FastAPI()
 handler = Mangum(app)
 
-class CustomModelObj():
-    def __init__(self, model):
-        self.model = model
-        self.value_map = json.load(open('target_encoder_map.json', 'r'))
 
-    def transform_data(self, df):
-        X_COLS = ['industry', 'metric', 'location_id', 'city_id', 'is_sheltered', 'location_type_id',
-                  'mission_day_of_year', 'mission_start_hour']
-        CATERGORY_COLS = ['industry', 'metric', 'location_id', 'city_id', 'is_sheltered', 'location_type_id']
-        df = df[X_COLS]
-        location_mission_count_min = 20
-        df = df.dropna()
-        df['mission_day_of_year'] = df['mission_day_of_year'].astype(int)
-        df['mission_start_hour'] = df['mission_start_hour'].astype(int)
-        str_cols = ['industry', 'metric', 'is_sheltered']
-        for c in str_cols:
-            df[c] = df[c].astype(str).str.lower().str.replace('industry: ', '').str.replace(' ', '').str.replace(
-                'signups', 'signup')
+value_map = json.load(open('target_encoder_map.json', 'r'))
 
-        df.loc[~df['location_id'].astype(str).isin(self.value_map['location_id'].keys()), 'location_id'] = 'other'
-        for col in CATERGORY_COLS:
-            df[col] = df[col].astype(str)
-            val_map = self.value_map[col]
-            df[col] = df[col].map(val_map).values
-        df = df[X_COLS]
-        return df
+def transform_data(df):
+    X_COLS = ['industry', 'metric', 'location_id', 'city_id', 'is_sheltered', 'location_type_id',
+              'mission_day_of_year', 'mission_start_hour']
+    CATERGORY_COLS = ['industry', 'metric', 'location_id', 'city_id', 'is_sheltered', 'location_type_id']
+    df = df[X_COLS]
+    df = df.dropna()
+    df['mission_day_of_year'] = df['mission_day_of_year'].astype(int)
+    df['mission_start_hour'] = df['mission_start_hour'].astype(int)
+    str_cols = ['industry', 'metric', 'is_sheltered']
+    for c in str_cols:
+        df[c] = df[c].astype(str).str.lower().str.replace('industry: ', '').str.replace(' ', '').str.replace(
+            'signups', 'signup')
 
-    def predict(self, X):
-        X = self.transform_data(X)
-        Y = self.model.predict(X)
-        return Y
+    df.loc[~df['location_id'].astype(str).isin(value_map['location_id'].keys()), 'location_id'] = 'other'
+    for col in CATERGORY_COLS:
+        df[col] = df[col].astype(str)
+        val_map = value_map[col]
+        df[col] = df[col].map(val_map).values
+    df = df[X_COLS]
+    return df
 
 
 def get_s3_client():
@@ -68,7 +60,9 @@ def read_root(
     # model_prefix = "models/xgb_target_encoder.tar.gz"
     # model = load_model_from_s3(bucket, model_prefix)
     model = joblib.load('xgb_target_encoder.tar.gz')
-    predictions = [float(x) for x in model.predict(pd.DataFrame(input_data.data))]
+    input_df = pd.DataFrame(input_data.data)
+    input_df = transform_data(input_df)
+    predictions = [float(x) for x in model.predict(input_df)]
     print(predictions)
     return {"predictions":predictions, "input_data": input_data}
 
