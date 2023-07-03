@@ -6,7 +6,7 @@ import tempfile
 import joblib
 import json
 import pandas as pd
-import sqlalchemy as sa
+# import sqlalchemy as sa
 import itertools
 from datetime import timedelta
 
@@ -43,32 +43,32 @@ def transform_data(df):
     return df
 
 
-def get_s3_client():
-    s3 = boto3.client('s3')
-    return s3
-
-
-def load_model_from_s3(bucket, key):
-    s3_client = get_s3_client()
-    with tempfile.TemporaryFile() as fp:
-        s3_client.download_fileobj(Fileobj=fp, Bucket=bucket, Key=key)
-        fp.seek(0)
-        return joblib.load(fp)
-
-
-def query_to_pandas(query):
-    HOST = 'prod-oppizi-com.cmqi0rqok9gw.us-east-1.rds.amazonaws.com'
-    PORT = 5432
-    USER = 'ganymede'
-    DB = 'oppizi'
-    PW = 'UP5Z4YoLDGSvoVnotmcd'
-    query = sa.text(query)
-    conn_str = f"postgresql+psycopg2://{USER}:{PW}@{HOST}:{PORT}/{DB}"
-    engine = sa.create_engine(conn_str)
-    with engine.begin() as conn:
-        df = pd.read_sql(sql=query, con=conn)
-    engine.dispose()
-    return df
+# def get_s3_client():
+#     s3 = boto3.client('s3')
+#     return s3
+#
+#
+# def load_model_from_s3(bucket, key):
+#     s3_client = get_s3_client()
+#     with tempfile.TemporaryFile() as fp:
+#         s3_client.download_fileobj(Fileobj=fp, Bucket=bucket, Key=key)
+#         fp.seek(0)
+#         return joblib.load(fp)
+#
+#
+# def query_to_pandas(query):
+#     HOST = 'prod-oppizi-com.cmqi0rqok9gw.us-east-1.rds.amazonaws.com'
+#     PORT = 5432
+#     USER = 'ganymede'
+#     DB = 'oppizi'
+#     PW = 'UP5Z4YoLDGSvoVnotmcd'
+#     query = sa.text(query)
+#     conn_str = f"postgresql+psycopg2://{USER}:{PW}@{HOST}:{PORT}/{DB}"
+#     engine = sa.create_engine(conn_str)
+#     with engine.begin() as conn:
+#         df = pd.read_sql(sql=query, con=conn)
+#     engine.dispose()
+#     return df
 
 
 def get_locations(cities):
